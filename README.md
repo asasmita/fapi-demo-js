@@ -9,6 +9,7 @@ In this app, you can do the following -
 1. Authenticate the client using either `private_key_jwt` or `tls_client_auth`
 2. Viewing the authenticated user's profile by unpacking the id_token
 3. Viewing the introspection payload
+4. Trigger single-logout (SLO)
 
 You can run this in multiple modes, where you vary the client authentication options and choose to enable certificate bound access tokens.
 
@@ -26,6 +27,26 @@ This guide will provide a prescriptive configuration but you can vary this:
 2. Certificate bound access tokens disabled
 
 > **NOTE:** You need a custom domain on your Verify tenant that is configured with the CA bundle provided by your PKI that would issue the client certificate. Given this isn't available for trial tenants, the instructions here disable this option. However, if you do have a custom domain available and configured, enable this option.
+
+### Set up for Single-Logout
+
+This application is using cookie to store the session. In order to logout properly, cookie information need to be received.
+The application is using front-channel logout endpoint, which is called by authorization server (OP) using `iframe`.
+
+Modern browser will not forward cookie to unsecure site. Hence the application need to start in HTTPS mode.
+
+1. Assuming this application is accessible as `demoapp.com`. You can create alias in `/etc/hosts` for your localhost IP.
+
+2. Generate HTTP server key and certificate as shown below and place it under `config` folder.
+
+```
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./server.key -out server.crt \
+-subj "/CN=demoapp.com" -addext "subjectAltName=DNS:demoapp.com,IP:127.0.0.1"
+```
+
+3. Add the certificate as trusted certificate for your browser.
+
+4. Since `demoapp.com` is not the same domain or a sub-domain of IBM Security Verify site, `demoapp.com` cookie is considered a third-party cookie for IBM Security Verify. In order for the `demoapp.com` cookie get forwarded in `iframe`, IBM Security Verify has to allow third-party cookie.
 
 ### Set up the transaction type
 
@@ -63,7 +84,12 @@ Once created, the summary view would look as below.
     - Enable "certificate bound access token" if you have a certificate. If you don't, do not enable this
     - Choose "PS256" as the signature algorithm
 
-6. Under Endpoint Configuration, click on the edit icon next to "Authorize". Choose "Edit" next to "Open Banking Intent ID" and copy/paste the following code snippet.
+6. For single-logout configuration:
+    - Choose "Front-Channel" as "Logout Option"
+    - Set `https://demoapp.com:3000/fclogout` as the "Logout Endpoint"
+    - Add `https://demoapp.com:3000/postlogout` as one of the "Post-Logout Redirect URI"
+
+7. Under Endpoint Configuration, click on the edit icon next to "Authorize". Choose "Edit" next to "Open Banking Intent ID" and copy/paste the following code snippet.
 
     ```yaml
     statements:
@@ -86,17 +112,17 @@ Once created, the summary view would look as below.
         }
     ```
 
-7. Choose the identity sources and access policy, as desired.
+8. Choose the identity sources and access policy, as desired.
 
-8. Select "Ask for consent" for User Consent
+9. Select "Ask for consent" for User Consent
 
-9. Save and set "Automatic access for all users and groups" under the Entitlements tab
+10. Save and set "Automatic access for all users and groups" under the Entitlements tab
 
-10. Switch to the Privacy tab and add `Open Banking payment` from the list of purposes allowed for the application.
+11. Switch to the Privacy tab and add `Open Banking payment` from the list of purposes allowed for the application.
 
-11. Switch to API access tab and add a new API client (you may name it anything you like). Either uncheck "Restrict custom scopes" or add `payment` to the allowed scopes. These client credentials are designated `API_CLIENT_ID` and `API_CLIENT_SECRET`.
+12. Switch to API access tab and add a new API client (you may name it anything you like). Either uncheck "Restrict custom scopes" or add `payment` to the allowed scopes. These client credentials are designated `API_CLIENT_ID` and `API_CLIENT_SECRET`.
 
-12. Generate a jwks containing the private key and obtain a public cert. Upload the public cert into "Security" > "Certificates" under "Signer certificates"
+13. Generate a jwks containing the private key and obtain a public cert. Upload the public cert into "Security" > "Certificates" under "Signer certificates"
     - You can use a tool like [mkjwk](https://mkjwk.org/) for the purposes to testing this app. Use `PS256` as the algorithm. Copy the public and private keypair into the app's config directory - `config/jwks.json`. Download the self-signed certificate as a PEM file and upload it to Verify as described.
 
 ### Setup the application

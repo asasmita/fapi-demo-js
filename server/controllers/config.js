@@ -15,4 +15,5 @@ exports.Config = {
     apiClientSecret : process.env.API_CLIENT_SECRET,
     mtlsOrJWT       : process.env.MTLS_OR_JWT,
     certBound       : process.env.CERT_BOUND,
+    postLogoutUri   : process.env.POST_LOGOUT_REDIRECT_URI,
 };

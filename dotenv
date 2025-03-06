@@ -11,3 +11,4 @@ API_CLIENT_SECRET=
 MTLS_OR_JWT=jwt
 CERT_BOUND=false
 RESOURCE_BASE_URL=https://9f1uo420uf.execute-api.us-east-1.amazonaws.com
+POST_LOGOUT_REDIRECT_URI=http://localhost:3000/postlogout
